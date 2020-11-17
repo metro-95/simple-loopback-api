@@ -1,4 +1,3 @@
-import {inject} from '@loopback/core';
 import {
   Count,
   CountSchema,
@@ -15,13 +14,9 @@ import {
   patch,
   post,
   put,
-  Request,
   requestBody,
-  Response,
-  RestBindings,
 } from '@loopback/rest';
 import AWS from 'aws-sdk';
-import multer from 'multer';
 import stream from 'stream';
 import {Employee} from '../models';
 import {EmployeeRepository} from '../repositories';
@@ -49,63 +44,6 @@ export class EmployeeController {
     @repository(EmployeeRepository)
     public employeeRepository: EmployeeRepository,
   ) {}
-
-  @post('/upload', {
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-            },
-          },
-        },
-        description: '',
-      },
-    },
-  })
-  async upload(
-    @requestBody({
-      description: 'multipart/form-data value.',
-      required: true,
-      content: {
-        'multipart/form-data': {
-          // Skip body parsing
-          'x-parser': 'stream',
-          schema: {type: 'object'},
-        },
-      },
-    })
-    request: Request,
-    @inject(RestBindings.Http.RESPONSE) response: Response,
-  ): Promise<object> {
-    return new Promise<object>((resolve, reject) => {
-      const storage = multer.memoryStorage();
-      const upload = multer({storage});
-
-      upload.any()(request, response, async (err: any) => {
-        if (err) reject(err);
-        else {
-          let res = new Array();
-          for (const file of (request as any).files) {
-            const bucketName = 'metro-images';
-            const params = {
-              Bucket: bucketName,
-              Key: file.originalname, // File name you want to save as in S3
-              Body: bufferToStream(file.buffer),
-            };
-            try {
-              const stored = await s3.upload(params).promise();
-              res.push(stored);
-            } catch (err) {
-              reject(err);
-            }
-          }
-          resolve(res);
-        }
-      });
-    });
-  }
 
   @post('/employees', {
     responses: {
